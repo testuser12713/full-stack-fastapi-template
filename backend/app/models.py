@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime
+from enum import StrEnum
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
@@ -52,7 +53,7 @@ class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
     created_at: datetime | None = Field(default_factory=get_datetime_utc)
-    items: list[Item] = Relationship(back_populates="owner", cascade_delete=True)
+    items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
 
 
 # Properties to return via API, id is always required
@@ -67,9 +68,19 @@ class UsersPublic(SQLModel):
 
 
 # Shared properties
+class ItemPriority(StrEnum):
+    low = "low"
+    medium = "medium"
+    high = "high"
+
+
 class ItemBase(SQLModel):
     title: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=255)
+    priority: ItemPriority = Field(
+        default=ItemPriority.medium,
+        sa_column_kwargs={"nullable": False, "server_default": "medium"},
+    )
 
 
 # Properties to receive on item creation
@@ -81,6 +92,7 @@ class ItemCreate(ItemBase):
 class ItemUpdate(SQLModel):
     title: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=255)
+    priority: ItemPriority | None = Field(default=None)
 
 
 # Database model, database table inferred from class name
