@@ -23,7 +23,7 @@
           "coverage>=7.4.3,<8.0.0"
         ]
       ],
-      "test": [["bash", "scripts/test.sh"]],
+      "test": [["${python}", "-m", "pytest"]],
       "start": [
         "${python}",
         "-m",
