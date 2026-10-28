@@ -2,6 +2,33 @@ import { defineConfig, devices } from '@playwright/test';
 import 'dotenv/config'
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5173'
+const apiURL = process.env.VITE_API_URL ?? 'http://localhost:8000'
+const apiPort = new URL(apiURL).port || '8000'
+const mailpitURL = process.env.MAILPIT_HOST ?? 'http://localhost:8025'
+
+const webServers = [
+  {
+    command: 'node scripts/fake-mailpit.mjs',
+    url: `${mailpitURL}/api/v1/search?query=to%3Anobody%40example.com&limit=1`,
+    reuseExistingServer: !process.env.CI,
+    timeout: 30_000,
+  },
+  {
+    command: `bash scripts/start-backend.sh ${apiPort}`,
+    url: `${apiURL}/api/v1/utils/health-check/`,
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+  },
+]
+
+if (!process.env.PLAYWRIGHT_BASE_URL) {
+  webServers.push({
+    command: 'npm run dev',
+    url: baseURL,
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+  })
+}
 
 /**
  * Read environment variables from file.
@@ -84,12 +111,6 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: process.env.PLAYWRIGHT_BASE_URL
-    ? undefined
-    : {
-        command: 'bun run dev',
-        url: baseURL,
-        reuseExistingServer: !process.env.CI,
-      },
+  /* Run the backend and frontend before starting the tests */
+  webServer: webServers,
 });
