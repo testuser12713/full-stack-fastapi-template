@@ -1,0 +1,64 @@
+{
+  "runcontract": 1,
+  "services": [
+    {
+      "name": "db",
+      "kind": "database",
+      "engine": "postgres"
+    },
+    {
+      "name": "backend",
+      "dir": "backend",
+      "stack": "python",
+      "kind": "server",
+      "install": [
+        ["${python}", "-m", "pip", "install", "-e", "."],
+        [
+          "${python}",
+          "-m",
+          "pip",
+          "install",
+          "pytest>=7.4.3,<10.0.0",
+          "pytest-cov>=7.1.0,<8.0.0",
+          "coverage>=7.4.3,<8.0.0"
+        ]
+      ],
+      "test": [["bash", "scripts/test.sh"]],
+      "start": [
+        "${python}",
+        "-m",
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "${PORT}"
+      ],
+      "port": 8000,
+      "port_env": "PORT",
+      "health": {
+        "path": "/api/v1/utils/health-check/",
+        "expect_status": [200]
+      },
+      "seed": [["${python}", "app/initial_data.py"]],
+      "env": {
+        "DATABASE_URL": {"dev": "${service:db.url}"},
+        "FRONTEND_HOST": {"dev": "${service:frontend.origin}"},
+        "FASTAPI_ENV": {"dev": "development"}
+      }
+    },
+    {
+      "name": "frontend",
+      "dir": "frontend",
+      "stack": "web-vite",
+      "kind": "static",
+      "serve_dir": "../backend/app/frontend",
+      "install": [["npm", "ci"]],
+      "build": [["npm", "run", "build"]],
+      "test": [["npx", "playwright", "test"]],
+      "env": {
+        "VITE_API_URL": {"dev": "${service:backend.origin}"}
+      }
+    }
+  ]
+}

@@ -35,3 +35,15 @@ export function priorityLabel(value: ItemPublic["priority"]): string {
       return assertNever(value)
   }
 }
+
+export const DEFAULT_ITEM_PRIORITY: ItemPriorityValue = "medium"
+
+const PRIORITY_DOT_CLASSES: Record<ItemPriorityValue, string> = {
+  low: "bg-[#525252] dark:bg-[#d4d4d4]",
+  medium: "bg-[#92400e] dark:bg-[#fcd34d]",
+  high: "bg-[#b91c1c] dark:bg-[#fca5a5]",
+}
+
+export function priorityDotClass(value: ItemPriorityValue): string {
+  return PRIORITY_DOT_CLASSES[value]
+}
