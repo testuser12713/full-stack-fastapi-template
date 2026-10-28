@@ -7,6 +7,25 @@
       "engine": "postgres"
     },
     {
+      "name": "app",
+      "dir": ".",
+      "stack": "python",
+      "kind": "library",
+      "install": [
+        ["${python}", "-m", "pip", "install", "-e", "."],
+        [
+          "${python}",
+          "-m",
+          "pip",
+          "install",
+          "pytest>=7.4.3,<10.0.0",
+          "pytest-cov>=7.1.0,<8.0.0",
+          "coverage>=7.4.3,<8.0.0"
+        ]
+      ],
+      "test": [["${python}", "-m", "pytest"]]
+    },
+    {
       "name": "backend",
       "dir": "backend",
       "stack": "python",
