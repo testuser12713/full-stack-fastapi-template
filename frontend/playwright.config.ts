@@ -96,13 +96,13 @@ export default defineConfig({
         {
           command: 'npm run dev',
           url: baseURL,
-          reuseExistingServer: !process.env.CI,
+          reuseExistingServer: true,
         },
         {
           command: 'python3 -m uvicorn app.main:app --port 8000',
           cwd: '../backend',
           url: 'http://localhost:8000/api/v1/utils/health-check/',
-          reuseExistingServer: !process.env.CI,
+          reuseExistingServer: true,
         },
       ],
 });
