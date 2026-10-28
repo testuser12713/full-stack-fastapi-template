@@ -9,7 +9,7 @@
     "lint": "biome check --write --unsafe --no-errors-on-unmatched --files-ignore-unknown=true ./",
     "preview": "vite preview",
     "generate-client": "openapi-ts",
-    "test": "npx playwright test",
+    "test": "node --test src/lib/itemPriority.test.ts && npx playwright test",
     "test:ui": "npx playwright test --ui"
   },
   "dependencies": {
