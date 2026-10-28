@@ -1,0 +1,143 @@
+{
+  "runcontract": 1,
+  "services": [
+    {
+      "name": "workspace",
+      "dir": ".",
+      "stack": "python",
+      "kind": "library",
+      "install": [["${python}", "-m", "pip", "install", "-q", "-e", "."]],
+      "depends_on": ["db"],
+      "env": {
+        "DATABASE_URL": { "dev": "${service:db.url}" },
+        "SECRET_KEY": { "generate": "hex", "bytes": 32 },
+        "FIRST_SUPERUSER_PASSWORD": {
+          "external": true,
+          "degraded_without": "sign-in uses the FIRST_SUPERUSER_PASSWORD configured in the environment or .env"
+        },
+        "PROJECT_NAME": {
+          "dev": "Full Stack FastAPI Project",
+          "not_secret": true,
+          "why": "Display name of the project in the API docs and UI; it is not a credential."
+        },
+        "FIRST_SUPERUSER": { "dev": "admin@example.com" },
+        "FASTAPI_ENV": { "dev": "development" }
+      },
+      "test": [["${python}", "-m", "pytest"]]
+    },
+    {
+      "name": "db",
+      "kind": "database",
+      "engine": "postgres"
+    },
+    {
+      "name": "backend",
+      "dir": "backend",
+      "stack": "python",
+      "kind": "server",
+      "install": [
+        ["${python}", "-m", "pip", "install", "-q", "-e", "."],
+        ["${python}", "-m", "pip", "install", "-q", "pytest"]
+      ],
+      "start": [
+        "${python}",
+        "-m",
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "${PORT}"
+      ],
+      "port": 8000,
+      "health": {
+        "path": "/api/v1/items/",
+        "expect_status": [401]
+      },
+      "ready_timeout_s": 60,
+      "depends_on": ["db"],
+      "env": {
+        "DATABASE_URL": { "dev": "${service:db.url}" },
+        "SECRET_KEY": { "generate": "hex", "bytes": 32 },
+        "FIRST_SUPERUSER_PASSWORD": {
+          "external": true,
+          "degraded_without": "sign-in uses the FIRST_SUPERUSER_PASSWORD configured in the environment or .env"
+        },
+        "PROJECT_NAME": {
+          "dev": "Full Stack FastAPI Project",
+          "not_secret": true,
+          "why": "Display name of the project in the API docs and UI; it is not a credential."
+        },
+        "FIRST_SUPERUSER": { "dev": "admin@example.com" },
+        "FASTAPI_ENV": { "dev": "development" },
+        "FRONTEND_HOST": { "dev": "${service:frontend.origin}" },
+        "SMTP_HOST": {
+          "external": true,
+          "degraded_without": "emails are not sent because no SMTP host is configured"
+        },
+        "SMTP_PORT": {
+          "external": true,
+          "degraded_without": "email delivery falls back to the default SMTP port"
+        },
+        "SMTP_USER": {
+          "external": true,
+          "degraded_without": "emails are sent without SMTP authentication"
+        },
+        "SMTP_PASSWORD": {
+          "external": true,
+          "degraded_without": "emails are sent without SMTP authentication"
+        },
+        "SMTP_TLS": {
+          "external": true,
+          "degraded_without": "email delivery uses the default TLS setting"
+        },
+        "SMTP_SSL": {
+          "external": true,
+          "degraded_without": "email delivery uses the default SSL setting"
+        },
+        "EMAILS_FROM_EMAIL": {
+          "external": true,
+          "degraded_without": "emails are not sent because no sender address is configured"
+        },
+        "EMAILS_FROM_NAME": {
+          "external": true,
+          "degraded_without": "emails fall back to the project name as sender name"
+        }
+      },
+      "seed": [
+        ["${python}", "-m", "alembic", "upgrade", "head"],
+        ["${python}", "app/initial_data.py"]
+      ],
+      "test": [["${python}", "-m", "pytest", "tests/"]]
+    },
+    {
+      "name": "frontend",
+      "dir": "frontend",
+      "stack": "web-vite",
+      "kind": "server",
+      "install": [["npm", "ci", "--no-audit", "--no-fund"]],
+      "start": [
+        "npm",
+        "run",
+        "dev",
+        "--",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "${PORT}",
+        "--strictPort"
+      ],
+      "port": 5173,
+      "health": {
+        "path": "/",
+        "expect_status": [200]
+      },
+      "ready_timeout_s": 60,
+      "depends_on": ["backend"],
+      "env": {
+        "VITE_API_URL": { "dev": "${service:backend.origin}" }
+      },
+      "test": [["npm", "test"]]
+    }
+  ]
+}
