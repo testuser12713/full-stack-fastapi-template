@@ -1,3 +1,6 @@
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+
 [dependency-groups]
 dev = [
     "prek>=0.5.3,<1.0.0",
