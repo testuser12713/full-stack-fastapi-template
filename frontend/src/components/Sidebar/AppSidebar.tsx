@@ -2,6 +2,7 @@ import { Briefcase, Home, Users } from "lucide-react"
 
 import { SidebarAppearance } from "@/components/Common/Appearance"
 import { Logo } from "@/components/Common/Logo"
+import { PrivacyLink } from "@/components/Common/PrivacyLink"
 import {
   Sidebar,
   SidebarContent,
@@ -34,6 +35,9 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarAppearance />
+        <div className="px-2 group-data-[collapsible=icon]:hidden">
+          <PrivacyLink />
+        </div>
         <User user={currentUser} />
       </SidebarFooter>
     </Sidebar>

@@ -5,6 +5,11 @@
     "frontend",
     "packages/*"
   ],
+  "overrides": {
+    "next": "16.4.1",
+    "js-yaml": "4.3.2",
+    "@react-email/render": "2.2.0"
+  },
   "scripts": {
     "dev": "bun run --filter frontend dev",
     "lint": "bun run --filter frontend lint",
