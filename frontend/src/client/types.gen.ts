@@ -56,7 +56,13 @@ export type ItemCreate = {
      * Description
      */
     description?: string | null;
+    priority?: ItemPriority;
 };
+
+/**
+ * ItemPriority
+ */
+export type ItemPriority = 'low' | 'medium' | 'high';
 
 /**
  * ItemPublic
@@ -70,6 +76,7 @@ export type ItemPublic = {
      * Description
      */
     description?: string | null;
+    priority?: ItemPriority;
     /**
      * Id
      */
@@ -96,6 +103,7 @@ export type ItemUpdate = {
      * Description
      */
     description?: string | null;
+    priority?: ItemPriority | null;
 };
 
 /**
@@ -784,6 +792,10 @@ export type itemsReadItemsData = {
          * Limit
          */
         limit?: number;
+        /**
+         * Priority
+         */
+        priority?: ItemPriority | null;
     };
     url: '/api/v1/items/';
 };
@@ -826,7 +838,7 @@ export type itemsCreateItemResponses = {
     /**
      * Successful Response
      */
-    200: ItemPublic;
+    201: ItemPublic;
 };
 
 export type itemsCreateItemResponse = itemsCreateItemResponses[keyof itemsCreateItemResponses];

@@ -51,8 +51,7 @@ def update_release_notes(
     current_version = get_current_version(content, release_notes_file)
     if parse_version(version) <= parse_version(current_version):
         raise RuntimeError(
-            f"New version {version} must be greater than current version "
-            f"{current_version}"
+            f"New version {version} must be greater than current version {current_version}"
         )
 
     current_match = VERSION_HEADING_PATTERN.search(content)
@@ -74,23 +73,18 @@ def get_release_notes_body(content: str, version: str, release_notes_file: Path)
     match = version_heading.search(content)
     if not match:
         raise RuntimeError(
-            f"Could not find release notes section for {version} in "
-            f"{release_notes_file}"
+            f"Could not find release notes section for {version} in {release_notes_file}"
         )
 
     next_match = VERSION_HEADING_PATTERN.search(content, match.end())
     end = next_match.start() if next_match else len(content)
     body = content[match.end() : end].strip()
     if not body:
-        raise RuntimeError(
-            f"Release notes section for {version} in {release_notes_file} is empty"
-        )
+        raise RuntimeError(f"Release notes section for {version} in {release_notes_file} is empty")
     return f"{body}\n"
 
 
-def prepare_release(
-    bump: BumpType, release_date: date, release_notes_file: Path
-) -> str:
+def prepare_release(bump: BumpType, release_date: date, release_notes_file: Path) -> str:
     content = release_notes_file.read_text(encoding="utf-8")
     version = bump_version(get_current_version(content, release_notes_file), bump)
     release_notes_file.write_text(
@@ -144,9 +138,7 @@ def current_version(
     ] = RELEASE_NOTES_FILE,
 ) -> None:
     typer.echo(
-        get_current_version(
-            release_notes_file.read_text(encoding="utf-8"), release_notes_file
-        )
+        get_current_version(release_notes_file.read_text(encoding="utf-8"), release_notes_file)
     )
 
 
