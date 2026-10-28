@@ -5,12 +5,12 @@ from pathlib import Path
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
-from sqlmodel import SQLModel
+from sqlmodel import Session, SQLModel
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
 from app.core.config import settings
-from app.core.db import engine
+from app.core.db import engine, init_db
 
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 
@@ -22,6 +22,8 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     SQLModel.metadata.create_all(engine)
+    with Session(engine) as session:
+        init_db(session)
     yield
 
 
