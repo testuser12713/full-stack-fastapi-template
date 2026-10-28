@@ -87,9 +87,22 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
-    : {
-        command: 'npm run dev',
-        url: baseURL,
-        reuseExistingServer: !process.env.CI,
-      },
+    : [
+        {
+          command: 'node tests/utils/mailpit-server.mjs',
+          url: 'http://localhost:8025/api/v1/messages',
+          reuseExistingServer: true,
+        },
+        {
+          command: 'npm run dev',
+          url: baseURL,
+          reuseExistingServer: !process.env.CI,
+        },
+        {
+          command: 'python3 -m uvicorn app.main:app --port 8000',
+          cwd: '../backend',
+          url: 'http://localhost:8000/api/v1/utils/health-check/',
+          reuseExistingServer: !process.env.CI,
+        },
+      ],
 });
