@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "fastapi-full-stack-template"
 version = "0.1.0"
 description = "Runtime dependencies of the backend service, declared at the repository root for the clean-environment pipeline install."
-requires-python = ">=3.14,<4.0"
+requires-python = ">=3.13,<4.0"
 dependencies = [
     "fastapi[standard]>=0.141.1,<1.0.0",
     "python-multipart<1.0.0,>=0.0.27",
