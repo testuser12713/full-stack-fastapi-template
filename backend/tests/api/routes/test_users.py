@@ -7,7 +7,7 @@ from sqlmodel import Session, select
 from app import crud
 from app.core.config import settings
 from app.core.security import verify_password
-from app.models import User, UserCreate
+from app.models import Item, User, UserCreate
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_email, random_lower_string
 
@@ -519,3 +519,44 @@ def test_delete_user_without_privileges(
     )
     assert r.status_code == 403
     assert r.json()["detail"] == "The user doesn't have enough privileges"
+
+
+def test_delete_user_me_removes_owned_items(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    username = random_email()
+    password = random_lower_string()
+    user_in = UserCreate(email=username, password=password)
+    user = crud.create_user(session=db, user_create=user_in)
+    user_id = user.id
+
+    login_data = {"username": username, "password": password}
+    r = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
+    assert r.status_code == 200
+    headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+    item_ids: list[uuid.UUID] = []
+    for index in range(2):
+        r = client.post(
+            f"{settings.API_V1_STR}/items/",
+            headers=headers,
+            json={"title": f"Owned item {index}", "description": "Cascade check"},
+        )
+        assert 200 <= r.status_code < 300
+        item_ids.append(uuid.UUID(r.json()["id"]))
+    assert len(item_ids) == 2
+
+    r = client.delete(f"{settings.API_V1_STR}/users/me", headers=headers)
+    assert r.status_code == 200
+    assert r.json()["message"] == "User deleted successfully"
+
+    for item_id in item_ids:
+        r = client.get(
+            f"{settings.API_V1_STR}/items/{item_id}",
+            headers=superuser_token_headers,
+        )
+        assert r.status_code == 404
+
+    db.expire_all()
+    remaining_items = db.exec(select(Item).where(Item.owner_id == user_id)).first()
+    assert remaining_items is None
