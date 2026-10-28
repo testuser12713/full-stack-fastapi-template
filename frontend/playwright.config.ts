@@ -88,7 +88,7 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
-        command: 'npm run dev',
+        command: 'bun run dev',
         url: baseURL,
         reuseExistingServer: !process.env.CI,
       },
