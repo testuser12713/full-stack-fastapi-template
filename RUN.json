@@ -20,7 +20,6 @@
         "expect_status": [200]
       },
       "env": {
-        "DATABASE_URL": {"dev": "${service:db.url}"},
         "SECRET_KEY": {"generate": "hex", "bytes": 32},
         "PROJECT_NAME": {
           "external": true,
