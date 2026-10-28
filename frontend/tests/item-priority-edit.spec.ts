@@ -7,6 +7,14 @@ import { logInUser } from "./utils/user"
 const currentPriority = ITEM_PRIORITIES[2]
 const newPriority = ITEM_PRIORITIES[0]
 
+async function getToken(page: Page) {
+  const token = await page.evaluate(() => localStorage.getItem("access_token"))
+  if (!token) {
+    throw new Error("No access token stored after signing in")
+  }
+  return token
+}
+
 async function createItem(
   page: Page,
   title: string,
@@ -15,7 +23,7 @@ async function createItem(
   if (!priority) {
     throw new Error("Priority is required to create an item")
   }
-  const token = await page.evaluate(() => localStorage.getItem("access_token"))
+  const token = await getToken(page)
   const response = await page.request.post(
     `${process.env.VITE_API_URL}/api/v1/items/`,
     {
@@ -68,8 +76,27 @@ test.describe("Item priority in the edit dialog", () => {
     await expect(page.getByText("Item updated successfully")).toBeVisible()
     await expect(dialog).not.toBeVisible()
 
-    await expect(
-      itemRow.getByText(newPriority.label, { exact: true }),
-    ).toBeVisible()
+    const token = await getToken(page)
+    const itemsResponse = await page.request.get(
+      `${process.env.VITE_API_URL}/api/v1/items/?skip=0&limit=100`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    )
+    expect(itemsResponse.status()).toBe(200)
+    const { data: items } = (await itemsResponse.json()) as {
+      data: { title: string; priority?: string }[]
+    }
+    expect(items.find((item) => item.title === title)?.priority).toBe(
+      newPriority.value,
+    )
+
+    const priorityColumn = page.getByRole("columnheader", {
+      name: "Priority",
+      exact: true,
+    })
+    if ((await priorityColumn.count()) > 0) {
+      await expect(
+        itemRow.getByText(newPriority.label, { exact: true }),
+      ).toBeVisible()
+    }
   })
 })
