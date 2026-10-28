@@ -25,17 +25,12 @@ import { cn } from "@/lib/utils"
 
 type PriorityFilter = "all" | ItemPriorityValue
 
-const DOT_CLASSNAMES = [
-  "bg-[#525252] dark:bg-[#d4d4d4]",
-  "bg-[#92400e] dark:bg-[#fcd34d]",
-  "bg-[#b91c1c] dark:bg-[#fca5a5]",
-] as const
-
-const ICON_CLASSNAMES = [
-  "text-[#525252] dark:text-[#d4d4d4]",
-  "text-[#92400e] dark:text-[#fcd34d]",
-  "text-[#b91c1c] dark:text-[#fca5a5]",
-] as const
+function priorityColorToken(
+  priority: ItemPriorityValue,
+  part: "bg" | "fg" | "border",
+): string {
+  return `var(--color-priority-${priority}-${part})`
+}
 
 function getItemsQueryOptions(priority: PriorityFilter) {
   return {
@@ -71,7 +66,7 @@ function PriorityFilterSelect({
   value: PriorityFilter
   onChange: (value: PriorityFilter) => void
 }) {
-  const activeIndex = ITEM_PRIORITIES.findIndex(
+  const activePriority = ITEM_PRIORITIES.find(
     (priority) => priority.value === value,
   )
 
@@ -88,31 +83,35 @@ function PriorityFilterSelect({
         )}
       >
         <Filter
-          className={cn(
-            "size-4",
-            activeIndex >= 0
-              ? ICON_CLASSNAMES[activeIndex]
-              : "text-[#737373] dark:text-muted-foreground",
-          )}
+          className="size-4 text-muted-foreground"
+          style={
+            activePriority?.value
+              ? { color: priorityColorToken(activePriority.value, "fg") }
+              : undefined
+          }
         />
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">All priorities</SelectItem>
-        {ITEM_PRIORITIES.map((priority, index) =>
-          priority.value ? (
+        {ITEM_PRIORITIES.map((priority) => {
+          if (!priority.value) {
+            return null
+          }
+
+          return (
             <SelectItem key={priority.value} value={priority.value}>
               <span
                 aria-hidden="true"
-                className={cn(
-                  "size-1.5 shrink-0 rounded-full",
-                  DOT_CLASSNAMES[index],
-                )}
+                className="size-1.5 shrink-0 rounded-full"
+                style={{
+                  backgroundColor: priorityColorToken(priority.value, "fg"),
+                }}
               />
               {priority.label}
             </SelectItem>
-          ) : null,
-        )}
+          )
+        })}
       </SelectContent>
     </Select>
   )

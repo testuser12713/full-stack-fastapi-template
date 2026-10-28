@@ -1,28 +1,18 @@
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 from pathlib import Path
 
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
-from sqlmodel import SQLModel
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
 from app.core.config import settings
-from app.core.db import engine
 
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     return f"{route.tags[0]}-{route.name}"
-
-
-@asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    SQLModel.metadata.create_all(engine)
-    yield
 
 
 if settings.SENTRY_DSN and settings.FASTAPI_ENV != "development":
@@ -32,7 +22,6 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     generate_unique_id_function=custom_generate_unique_id,
-    lifespan=lifespan,
 )
 
 app.add_middleware(
