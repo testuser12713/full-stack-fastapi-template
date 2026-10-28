@@ -1,0 +1,30 @@
+{
+  "runcontract": 1,
+  "services": [
+    {
+      "name": "db",
+      "kind": "database",
+      "engine": "postgres"
+    },
+    {
+      "name": "api",
+      "dir": "backend",
+      "stack": "python",
+      "kind": "server",
+      "install": [["${python}", "-m", "pip", "install", "-q", "-e", "."]],
+      "start": ["${python}", "-m", "uvicorn", "app.main:app", "--port", "${PORT}"],
+      "port": 8000,
+      "port_env": "PORT",
+      "health": {
+        "path": "/api/v1/utils/health-check/",
+        "expect_status": [200]
+      },
+      "env": {
+        "DATABASE_URL": {"dev": "${service:db.url}"},
+        "SECRET_KEY": {"generate": "hex", "bytes": 32},
+        "PROJECT_NAME": {"dev": "Full Stack FastAPI Project"},
+        "FASTAPI_ENV": {"dev": "development"}
+      }
+    }
+  ]
+}
