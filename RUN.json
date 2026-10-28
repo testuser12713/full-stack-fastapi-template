@@ -23,7 +23,7 @@
           "coverage>=7.4.3,<8.0.0"
         ]
       ],
-      "test": [["bash", "scripts/test.sh"]],
+      "test": [["${python}", "-m", "pytest", "tests/"]],
       "start": [
         "${python}",
         "-m",
@@ -46,6 +46,13 @@
         "FRONTEND_HOST": {"dev": "${service:frontend.origin}"},
         "FASTAPI_ENV": {"dev": "development"}
       }
+    },
+    {
+      "name": "workspace",
+      "dir": ".",
+      "stack": "python",
+      "kind": "library",
+      "install": [["${python}", "-m", "pip", "install", "-e", "."]]
     },
     {
       "name": "frontend",
