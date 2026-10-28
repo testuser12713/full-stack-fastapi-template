@@ -288,7 +288,7 @@ export class ItemsService {
     /**
      * Read Items
      *
-     * Retrieve items.
+     * Retrieve items, optionally filtered by priority.
      */
     public static readItems<ThrowOnError extends boolean = true>(options?: Options<itemsReadItemsData, ThrowOnError>) {
         return (options?.client ?? client).get<itemsReadItemsResponses, itemsReadItemsErrors, ThrowOnError>({
