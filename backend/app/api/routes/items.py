@@ -30,7 +30,7 @@ def read_items(
     Retrieve items.
     """
 
-    filters = []
+    filters: list[Any] = []
     if not current_user.is_superuser:
         filters.append(Item.owner_id == current_user.id)
     if priority is not None:
