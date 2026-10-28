@@ -15,7 +15,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        # Use the repository root .env file, independent of the working directory.
+        # Use top level .env file (one level above ./backend/), independent of cwd
         env_file=Path(__file__).resolve().parents[3] / ".env",
         env_ignore_empty=True,
         extra="ignore",
