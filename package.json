@@ -12,10 +12,5 @@
     "test:ui": "bun run --filter frontend test:ui",
     "email:dev": "bun run --filter emails dev",
     "email:export": "bun run --filter emails export"
-  },
-  "overrides": {
-    "next": "16.4.1",
-    "js-yaml": "4.3.2",
-    "@react-email/render": "2.2.0"
   }
 }

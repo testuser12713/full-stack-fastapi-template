@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import { TriangleAlert } from "lucide-react"
 import type { ReactNode } from "react"
 
+import { PrivacyLink } from "@/components/Common/PrivacyLink"
 import AppSidebar from "@/components/Sidebar/AppSidebar"
 import { Button } from "@/components/ui/button"
 import {
@@ -28,9 +29,6 @@ export const Route = createFileRoute("/privacy")({
     ],
   }),
 })
-
-const privacyLinkClass =
-  "inline-flex min-h-11 items-center rounded-sm px-1 text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:text-muted-foreground dark:hover:text-foreground"
 
 const tocItems = [
   { href: "#controller", label: "Controller" },
@@ -267,9 +265,7 @@ function PrivacyPolicy() {
             </LegalSection>
 
             <footer className="mt-8 flex flex-col gap-4 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
-              <Link to="/privacy" className={privacyLinkClass}>
-                Privacy policy
-              </Link>
+              <PrivacyLink />
               <Button asChild variant="outline">
                 <Link to="/items">Back to items</Link>
               </Button>

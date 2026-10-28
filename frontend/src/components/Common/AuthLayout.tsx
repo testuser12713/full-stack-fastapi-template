@@ -1,5 +1,6 @@
 import { Appearance } from "@/components/Common/Appearance"
 import { Logo } from "@/components/Common/Logo"
+import { PrivacyLink } from "@/components/Common/PrivacyLink"
 import { Footer } from "./Footer"
 
 interface AuthLayoutProps {
@@ -18,6 +19,9 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">{children}</div>
+        </div>
+        <div className="flex justify-center">
+          <PrivacyLink />
         </div>
         <Footer />
       </div>
