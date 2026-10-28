@@ -22,9 +22,38 @@
       "env": {
         "DATABASE_URL": {"dev": "${service:db.url}"},
         "SECRET_KEY": {"generate": "hex", "bytes": 32},
-        "PROJECT_NAME": {"dev": "Full Stack FastAPI Project"},
-        "FASTAPI_ENV": {"dev": "development"}
+        "PROJECT_NAME": {
+          "external": true,
+          "degraded_without": "The committed .env supplies the application name, so the API still boots."
+        },
+        "FASTAPI_ENV": {"dev": "development"},
+        "FRONTEND_HOST": {"dev": "${service:web.origin}"}
       }
+    },
+    {
+      "name": "web",
+      "dir": "frontend",
+      "stack": "web-vite",
+      "kind": "server",
+      "install": [["npm", "ci", "--no-audit", "--no-fund"]],
+      "build": [["npm", "run", "build"]],
+      "start": ["npm", "run", "dev", "--", "--port", "${PORT}"],
+      "port": 5173,
+      "port_env": "PORT",
+      "health": {
+        "path": "/",
+        "expect_status": [200]
+      },
+      "env": {
+        "VITE_API_URL": {"dev": "${service:api.origin}"}
+      }
+    },
+    {
+      "name": "root",
+      "dir": ".",
+      "stack": "python",
+      "kind": "library",
+      "install": [["${python}", "-m", "pip", "install", "-q", "-e", "."]]
     }
   ]
 }
