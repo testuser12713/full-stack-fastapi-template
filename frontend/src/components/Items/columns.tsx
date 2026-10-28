@@ -5,8 +5,10 @@ import type { ItemPublic } from "@/client"
 import type { DataTableFeatures } from "@/components/Common/DataTable"
 import { Button } from "@/components/ui/button"
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard"
+import type { ItemPriorityValue } from "@/lib/itemPriority"
 import { cn } from "@/lib/utils"
 import { ItemActionsMenu } from "./ItemActionsMenu"
+import { PriorityBadge } from "./PriorityBadge"
 
 function CopyId({ id }: { id: string }) {
   const [copiedText, copy] = useCopyToClipboard()
@@ -61,6 +63,17 @@ export const columns: ColumnDef<DataTableFeatures, ItemPublic>[] = [
         </span>
       )
     },
+  },
+  {
+    accessorKey: "priority",
+    header: () => (
+      <span className="inline-block w-[120px] text-left">Priority</span>
+    ),
+    cell: ({ row }) => (
+      <div className="w-[120px]">
+        <PriorityBadge priority={row.original.priority as ItemPriorityValue} />
+      </div>
+    ),
   },
   {
     id: "actions",
