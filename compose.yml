@@ -28,6 +28,7 @@ services:
     volumes:
       - app-db-data:/var/lib/postgresql
     environment:
+      - POSTGRES_USER=${POSTGRES_USER:-app}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?Variable not set}
       - POSTGRES_DB=app
 
@@ -61,7 +62,7 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       EMAILS_FROM_EMAIL: ${EMAILS_FROM_EMAIL}
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?Variable not set}@db:5432/app
+      DATABASE_URL: postgresql://app:${POSTGRES_PASSWORD:?Variable not set}@db:5432/app
       SENTRY_DSN: ${SENTRY_DSN:-}
 
     healthcheck:
