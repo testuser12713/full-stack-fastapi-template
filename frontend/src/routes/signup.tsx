@@ -182,6 +182,15 @@ function SignUp() {
           </div>
         </form>
       </Form>
+      <footer className="mt-4 flex justify-center border-t pt-4">
+        <RouterLink
+          to="/privacy"
+          data-testid="privacy-policy-link"
+          className="inline-flex min-h-11 items-center px-1 text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          Privacy policy
+        </RouterLink>
+      </footer>
     </AuthLayout>
   )
 }

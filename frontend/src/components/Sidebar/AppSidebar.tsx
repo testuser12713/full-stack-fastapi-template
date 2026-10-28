@@ -1,4 +1,5 @@
-import { Briefcase, Home, Users } from "lucide-react"
+import { Link as RouterLink } from "@tanstack/react-router"
+import { Briefcase, Home, ShieldCheck, Users } from "lucide-react"
 
 import { SidebarAppearance } from "@/components/Common/Appearance"
 import { Logo } from "@/components/Common/Logo"
@@ -7,6 +8,9 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import useAuth from "@/hooks/useAuth"
 import { type Item, Main } from "./Main"
@@ -34,6 +38,16 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarAppearance />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Privacy policy">
+              <RouterLink to="/privacy" data-testid="privacy-policy-link">
+                <ShieldCheck />
+                <span>Privacy policy</span>
+              </RouterLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
         <User user={currentUser} />
       </SidebarFooter>
     </Sidebar>
