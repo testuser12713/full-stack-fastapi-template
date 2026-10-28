@@ -2,6 +2,11 @@ import { defineConfig, devices } from '@playwright/test';
 import 'dotenv/config'
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5173'
+const apiURL = process.env.VITE_API_URL ?? 'http://localhost:8000'
+const mailpitURL = process.env.MAILPIT_HOST ?? 'http://localhost:8025'
+const mailpitIsLocal = ['localhost', '127.0.0.1', '::1'].includes(
+  new URL(mailpitURL).hostname,
+)
 
 /**
  * Read environment variables from file.
@@ -88,21 +93,27 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : [
+        ...(mailpitIsLocal
+          ? [
+              {
+                command: 'node tests/utils/mailpit-server.mjs',
+                url: `${mailpitURL}/api/v1/search?query=to:health@example.com`,
+                reuseExistingServer: !process.env.CI,
+                timeout: 30_000,
+              },
+            ]
+          : []),
         {
-          command: 'node tests/utils/mailpit-server.mjs',
-          url: 'http://localhost:8025/api/v1/messages',
-          reuseExistingServer: true,
+          command: 'python3 -m uvicorn app.main:app --port 8000',
+          cwd: '../backend',
+          url: `${apiURL}/api/v1/utils/health-check/`,
+          reuseExistingServer: !process.env.CI,
+          timeout: 120_000,
         },
         {
           command: 'npm run dev',
           url: baseURL,
-          reuseExistingServer: true,
-        },
-        {
-          command: 'python3 -m uvicorn app.main:app --port 8000',
-          cwd: '../backend',
-          url: 'http://localhost:8000/api/v1/utils/health-check/',
-          reuseExistingServer: true,
+          reuseExistingServer: !process.env.CI,
         },
       ],
 });

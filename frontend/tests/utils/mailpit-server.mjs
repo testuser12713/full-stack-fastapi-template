@@ -8,6 +8,13 @@ const HTTP_PORT = Number(process.env.MAILPIT_HTTP_PORT ?? 8025)
 const messages = []
 let nextId = 1
 
+function extractAddress(command) {
+  const angled = command.match(/<([^>]+)>/)
+  if (angled) return angled[1].trim().toLowerCase()
+  const parts = command.trim().split(/\s+/)
+  return (parts[parts.length - 1] ?? "").replace(/[<>]/g, "").toLowerCase()
+}
+
 function decodePart(body, encoding) {
   const enc = (encoding ?? "").toLowerCase()
   if (enc === "base64") {
@@ -23,7 +30,55 @@ function decodePart(body, encoding) {
   return body
 }
 
+function parsePart(raw) {
+  const crlfIndex = raw.indexOf("\r\n\r\n")
+  const lfIndex = raw.indexOf("\n\n")
+  const separatorIndex =
+    crlfIndex >= 0 && (lfIndex < 0 || crlfIndex < lfIndex) ? crlfIndex : lfIndex
+  const separatorLength = separatorIndex === crlfIndex ? 4 : 2
+  if (separatorIndex < 0) return raw
+
+  const headerBlock = raw.slice(0, separatorIndex)
+  const body = raw.slice(separatorIndex + separatorLength)
+
+  const headers = {}
+  let lastHeader = ""
+  for (const line of headerBlock.split(/\r?\n/)) {
+    const match = line.match(/^([^:]+):\s*(.*)$/)
+    if (match) {
+      lastHeader = match[1].toLowerCase()
+      headers[lastHeader] = match[2]
+    } else if (lastHeader && /^\s/.test(line)) {
+      headers[lastHeader] += ` ${line.trim()}`
+    }
+  }
+
+  const contentType = headers["content-type"] ?? "text/plain"
+  const boundaryMatch = contentType.match(/boundary="?([^";]+)"?/i)
+
+  if (/^multipart\//i.test(contentType) && boundaryMatch) {
+    const boundary = `--${boundaryMatch[1]}`
+    const decodedParts = []
+    for (const part of body.split(boundary)) {
+      const trimmed = part.replace(/^\r?\n/, "").replace(/\r?\n$/, "")
+      if (!trimmed || trimmed === "--") continue
+      decodedParts.push(parsePart(trimmed))
+    }
+    return decodedParts.join("\n")
+  }
+
+  const transferEncoding = (
+    headers["content-transfer-encoding"] ?? ""
+  ).toLowerCase()
+  return decodePart(body, transferEncoding)
+}
+
 function collectText(raw) {
+  const parsed = parsePart(raw)
+  if (parsed && parsed !== raw) {
+    return parsed
+  }
+
   const text = [raw]
   const blocks = raw.match(/(?:[A-Za-z0-9+/]{20,}={0,2}\r?\n?)+/g) ?? []
   for (const block of blocks) {
@@ -67,7 +122,7 @@ const httpServer = http.createServer((request, response) => {
     const found = searchMessages(url.searchParams.get("query") ?? "")
       .slice()
       .reverse()
-      .slice(0, limit)
+      .slice(0, Number.isFinite(limit) ? limit : 50)
       .map((message) => ({ ID: message.id }))
     response.writeHead(200, { "Content-Type": "application/json" })
     response.end(JSON.stringify({ messages: found }))
@@ -91,77 +146,104 @@ const httpServer = http.createServer((request, response) => {
   response.end("Not found")
 })
 
+function undot(raw) {
+  return raw
+    .split(/\r?\n/)
+    .map((line) => (line.startsWith("..") ? line.slice(1) : line))
+    .join("\r\n")
+}
+
+function storeMessage(envelope, raw) {
+  messages.push({
+    id: String(nextId++),
+    recipients: [...envelope.to],
+    raw: undot(raw),
+  })
+}
+
 const smtpServer = net.createServer((socket) => {
   let buffer = ""
-  let state = "command"
-  let recipients = []
-  let dataLines = []
+  let inData = false
+  let envelope = { from: "", to: [] }
 
   socket.write("220 mailpit ESMTP\r\n")
 
-  const finishMessage = () => {
-    messages.push({
-      id: String(nextId++),
-      recipients: [...recipients],
-      raw: dataLines.join("\r\n"),
-    })
-    recipients = []
-    dataLines = []
-    state = "command"
-    socket.write("250 OK\r\n")
-  }
+  const processBuffer = () => {
+    while (true) {
+      if (inData) {
+        if (buffer.startsWith(".\r\n") || buffer.startsWith(".\n")) {
+          const terminatorLength = buffer.startsWith(".\r\n") ? 3 : 2
+          buffer = buffer.slice(terminatorLength)
+          inData = false
+          storeMessage(envelope, "")
+          envelope = { from: "", to: [] }
+          socket.write("250 OK\r\n")
+          continue
+        }
 
-  const handleLine = (line) => {
-    if (state === "data") {
-      if (line === ".") {
-        finishMessage()
-      } else {
-        dataLines.push(line.startsWith("..") ? line.slice(1) : line)
+        let terminatorIndex = buffer.indexOf("\r\n.\r\n")
+        let terminatorLength = 5
+        if (terminatorIndex < 0) {
+          terminatorIndex = buffer.indexOf("\n.\n")
+          terminatorLength = 3
+        }
+        if (terminatorIndex < 0) return
+        const raw = buffer.slice(0, terminatorIndex)
+        buffer = buffer.slice(terminatorIndex + terminatorLength)
+        inData = false
+        storeMessage(envelope, raw)
+        envelope = { from: "", to: [] }
+        socket.write("250 OK\r\n")
+        continue
       }
-      return
-    }
 
-    const upper = line.toUpperCase()
-    if (upper.startsWith("EHLO")) {
-      socket.write("250-mailpit\r\n250 HELP\r\n")
-    } else if (upper.startsWith("HELO")) {
-      socket.write("250 mailpit\r\n")
-    } else if (upper.startsWith("MAIL FROM:")) {
-      socket.write("250 OK\r\n")
-    } else if (upper.startsWith("RCPT TO:")) {
-      const recipient = /<([^>]+)>/.exec(line)?.[1]
-      if (recipient) {
-        recipients.push(recipient)
+      let lineEnd = buffer.indexOf("\r\n")
+      let lineLength = 2
+      if (lineEnd < 0) {
+        lineEnd = buffer.indexOf("\n")
+        lineLength = 1
       }
-      socket.write("250 OK\r\n")
-    } else if (upper === "DATA") {
-      state = "data"
-      dataLines = []
-      socket.write("354 End data with <CR><LF>.<CR><LF>\r\n")
-    } else if (upper === "RSET") {
-      recipients = []
-      dataLines = []
-      state = "command"
-      socket.write("250 OK\r\n")
-    } else if (upper === "QUIT") {
-      socket.write("221 Bye\r\n")
-      socket.end()
-    } else {
-      socket.write("250 OK\r\n")
+      if (lineEnd < 0) return
+
+      const line = buffer.slice(0, lineEnd)
+      buffer = buffer.slice(lineEnd + lineLength)
+      const verb = (line.split(" ")[0] ?? "").toUpperCase()
+
+      switch (verb) {
+        case "EHLO":
+        case "HELO":
+          socket.write("250-localhost\r\n250 SIZE 10485760\r\n")
+          break
+        case "MAIL":
+          envelope.from = extractAddress(line)
+          socket.write("250 OK\r\n")
+          break
+        case "RCPT":
+          envelope.to.push(extractAddress(line))
+          socket.write("250 OK\r\n")
+          break
+        case "DATA":
+          inData = true
+          socket.write("354 End data with <CR><LF>.<CR><LF>\r\n")
+          break
+        case "RSET":
+          envelope = { from: "", to: [] }
+          socket.write("250 OK\r\n")
+          break
+        case "QUIT":
+          socket.write("221 Bye\r\n")
+          socket.end()
+          return
+        default:
+          socket.write("250 OK\r\n")
+      }
     }
   }
 
   socket.on("data", (chunk) => {
     buffer += chunk.toString("utf8")
-    let index = buffer.indexOf("\n")
-    while (index !== -1) {
-      const line = buffer.slice(0, index).replace(/\r$/, "")
-      buffer = buffer.slice(index + 1)
-      handleLine(line)
-      index = buffer.indexOf("\n")
-    }
+    processBuffer()
   })
-
   socket.on("error", () => socket.destroy())
 })
 
