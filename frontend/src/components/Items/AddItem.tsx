@@ -27,15 +27,50 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import useCustomToast from "@/hooks/useCustomToast"
+import { ITEM_PRIORITIES, type ItemPriorityValue } from "@/lib/itemPriority"
 import { handleError } from "@/utils"
+
+const priorityDotColor: Record<ItemPriorityValue, string> = {
+  low: "bg-[#1d4ed8] dark:bg-[#93c5fd]",
+  medium: "bg-[#b45309] dark:bg-[#fcd34d]",
+  high: "bg-[#b91c1c] dark:bg-[#fca5a5]",
+}
+
+const PriorityDot = ({ priority }: { priority: ItemPriorityValue }) => (
+  <span
+    aria-hidden="true"
+    className={`inline-block size-1.5 shrink-0 rounded-full ${priorityDotColor[priority]}`}
+  />
+)
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title is required" }),
   description: z.string().optional(),
+  priority: z.enum(ITEM_PRIORITIES),
 })
 
 type FormData = z.infer<typeof formSchema>
+
+const AddItemFooter = ({ isPending }: { isPending: boolean }) => (
+  <DialogFooter>
+    <DialogClose asChild>
+      <Button variant="outline" disabled={isPending}>
+        Cancel
+      </Button>
+    </DialogClose>
+    <LoadingButton type="submit" loading={isPending}>
+      Save
+    </LoadingButton>
+  </DialogFooter>
+)
 
 const AddItem = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -49,6 +84,7 @@ const AddItem = () => {
     defaultValues: {
       title: "",
       description: "",
+      priority: "medium",
     },
   })
 
@@ -70,7 +106,12 @@ const AddItem = () => {
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!mutation.isPending) setIsOpen(open)
+      }}
+    >
       <DialogTrigger asChild>
         <Button className="my-4">
           <Plus className="mr-2" />
@@ -121,18 +162,41 @@ const AddItem = () => {
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-medium text-muted-foreground">
+                      Priority
+                    </FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={mutation.isPending}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full bg-card max-md:min-h-11">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {ITEM_PRIORITIES.map((priority) => (
+                          <SelectItem key={priority} value={priority}>
+                            <PriorityDot priority={priority} />
+                            {priority}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline" disabled={mutation.isPending}>
-                  Cancel
-                </Button>
-              </DialogClose>
-              <LoadingButton type="submit" loading={mutation.isPending}>
-                Save
-              </LoadingButton>
-            </DialogFooter>
+            <AddItemFooter isPending={mutation.isPending} />
           </form>
         </Form>
       </DialogContent>
